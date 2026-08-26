@@ -77,30 +77,61 @@ def sync_from(source_repo: Path) -> int:
     return 0
 
 
+def _drift_against(recorded: dict[str, str], actual_hash_of: dict[str, str]) -> list[str]:
+    recorded_files = set(recorded.keys())
+    actual_files = set(actual_hash_of.keys())
+
+    drifted: list[str] = []
+    for rel in sorted(recorded_files & actual_files):
+        if actual_hash_of[rel] != recorded[rel]:
+            drifted.append(f"scripts/auditlib/{rel}")
+    for rel in sorted(actual_files - recorded_files):
+        drifted.append(f"scripts/auditlib/{rel} (untracked by manifest)")
+    for rel in sorted(recorded_files - actual_files):
+        drifted.append(f"scripts/auditlib/{rel} (missing on disk)")
+    return drifted
+
+
 def check() -> int:
+    """Compare the vendored copy against its own recorded manifest."""
     if not MANIFEST_PATH.exists():
         print(f"sync_auditlib: manifest not found: {MANIFEST_PATH}", file=sys.stderr)
         return 1
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     recorded: dict[str, str] = manifest.get("files", {})
+    actual = {_relative_name(p): _sha256(p) for p in _iter_vendored_files()}
 
-    actual_files = {_relative_name(p) for p in _iter_vendored_files()}
-    recorded_files = set(recorded.keys())
+    drifted = _drift_against(recorded, actual)
+    if drifted:
+        for line in drifted:
+            print(f"drift: {line}")
+        return 1
 
-    drifted: list[str] = []
+    print("auditlib: 0 drifted files")
+    return 0
 
-    for rel in sorted(recorded_files & actual_files):
-        actual_hash = _sha256(VENDOR_DIR / rel)
-        if actual_hash != recorded[rel]:
-            drifted.append(f"scripts/auditlib/{rel}")
 
-    for rel in sorted(actual_files - recorded_files):
-        drifted.append(f"scripts/auditlib/{rel} (untracked by manifest)")
+def check_against_source(source_repo: Path) -> int:
+    """Read-only: compare the vendored copy directly against a source clone.
 
-    for rel in sorted(recorded_files - actual_files):
-        drifted.append(f"scripts/auditlib/{rel} (missing on disk)")
+    Never writes to this repo -- unlike `--from` alone, this does not
+    re-vendor or touch the manifest, so a clean comparison leaves the
+    working tree exactly as it was.
+    """
+    source_vendor = source_repo / "scripts" / "auditlib"
+    if not source_vendor.is_dir():
+        print(f"sync_auditlib: source has no scripts/auditlib/: {source_vendor}", file=sys.stderr)
+        return 2
 
+    source_hashes = {
+        str(p.relative_to(source_vendor)).replace("\\", "/"): _sha256(p)
+        for p in source_vendor.rglob("*")
+        if p.is_file() and p.name != "_vendor_manifest.json" and "__pycache__" not in p.parts
+    }
+    actual = {_relative_name(p): _sha256(p) for p in _iter_vendored_files()}
+
+    drifted = _drift_against(source_hashes, actual)
     if drifted:
         for line in drifted:
             print(f"drift: {line}")
@@ -123,11 +154,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
 
+    if args.source and args.check:
+        return check_against_source(Path(args.source).resolve())
+
     if args.source:
-        rc = sync_from(Path(args.source).resolve())
-        if rc != 0 or not args.check:
-            return rc
-        return check()
+        return sync_from(Path(args.source).resolve())
 
     if args.check:
         return check()
