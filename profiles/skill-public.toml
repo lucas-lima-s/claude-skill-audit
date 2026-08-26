@@ -1,0 +1,41 @@
+name = "skill-public"
+downgrade_warn_to_info = false
+
+enabled_checks = [
+  "artifacts",
+  "skill_md",
+  "skill_layout",
+  "gitattributes",
+  "gitignore",
+  "pyproject",
+  "dev_deps",
+  "ci_workflow",
+  "changelog_format",
+  "python_style",
+  "runtime_stdlib",
+  "hardcoded_paths",
+]
+
+layer2_prompts = [
+  "readme_quality",
+  "setup_completeness",
+  "changelog_significance",
+  "language_coherence",
+  "aspiration_to_base_skill",
+]
+
+[artifacts]
+skill_md      = { path = "SKILL.md",     missing = "FAIL" }
+license       = { path = "LICENSE",      missing = "INFO" }
+readme        = { path = "README.md",    missing = "WARN" }
+setup         = { path = "SETUP.md",     missing = "WARN" }
+changelog     = { path = "CHANGELOG.md", missing = "INFO" }
+contributing  = { path = "CONTRIBUTING.md", missing = "INFO" }
+gitignore     = { path = ".gitignore",   missing = "WARN" }
+gitattributes = { path = ".gitattributes", missing = "INFO" }
+pyproject     = { path = "pyproject.toml", missing = "WARN", requires = "python_code" }
+ci_workflow   = { path = ".github/workflows/ci.yml", missing = "INFO" }
+pr_template   = { path = ".github/PULL_REQUEST_TEMPLATE.md", missing = "INFO" }
+issue_bug     = { path = ".github/ISSUE_TEMPLATE/bug_report.md", missing = "INFO" }
+issue_feature = { path = ".github/ISSUE_TEMPLATE/feature_request.md", missing = "INFO" }
+tests_dir     = { path = "tests", missing = "WARN", requires = "python_code" }
