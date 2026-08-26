@@ -1,0 +1,26 @@
+# Local artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.local
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# System
+.DS_Store
+Thumbs.db
+
+# Temporary outputs
+.history/
+*.log
+*.tmp
+/reports/

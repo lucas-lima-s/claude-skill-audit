@@ -1,0 +1,5 @@
+profile = "skill-public"
+
+[runtime_stdlib.allowlist]
+# Map import names to package names in [dependency-groups].dev (or
+# requirements-dev.txt) when they differ, e.g. `import yaml` from `pyyaml`.
