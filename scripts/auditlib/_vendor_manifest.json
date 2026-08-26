@@ -1,0 +1,30 @@
+{
+  "upstream": "https://github.com/lucas-lima-s/claude-skill-repo-audit",
+  "upstream_commit": "5b7a20d4a49dd82c73114d99da21049b7c851f01",
+  "synced_at": "2026-08-26T04:13:32Z",
+  "files": {
+    "__init__.py": "0dd66c16ebfbd511dc9af65e9507d417a926fc75d4f0c858dcf6fbf90e19aeae",
+    "checks/__init__.py": "fd4cddd0cea34a8a4b99f156a853baa6a268393013fba7bae9d637c2a8913ec3",
+    "checks/artifacts.py": "3693cab40d82188bf66fa89b8c819cb4a67dd0cdfc2386ef20a1b8f2c1679f1d",
+    "checks/changelog_format.py": "100b035dbd75bcd40f677d92c778de1ae99189aa472caaa631e74c5105c8ce32",
+    "checks/ci_workflow.py": "cfbbb0447ec76c7c66715526122df4aa60df205d72f75530fd2011a818abf97f",
+    "checks/dev_deps.py": "5310c3f5095eca107e692d7f7ad4f3b17838cd6ccc98ff9281d7821f1e7e133f",
+    "checks/gitattributes.py": "a8dd2e17ddac584ea539e97213c0cd482ad3dd87fae4669e815dde914293d769",
+    "checks/gitignore.py": "ddbada819b9a909723bf65767b4bfc92714f1f9cf5f9090ad73db9b468bb6443",
+    "checks/hardcoded_paths.py": "9f39eb2ae82a8c85a27a37b05bb2345cb69dad8b0db55e3267000f2ae00c5e48",
+    "checks/pyproject.py": "32bc25f38cd40a7d82da64ca0af0ba57a1f1b47ee154ceefb5752fdd01900684",
+    "checks/python_style.py": "c66a865e5d85002c49c9f8d0725f2fbdbe760438cf817c54fd36de5fd443cc32",
+    "config.py": "2f2951720e6259ab80ec50d61b4fdda60b43553611abd4e519d63f4aee552219",
+    "context.py": "8203046611ef02e1fe2cfcd6fbce24286717255ac62526dae1824425ba3a51bb",
+    "gitutil.py": "c787a6509fd7e47e0ac38d4a180b8d9dfed58e8a16454fcccf9d23a484c12261",
+    "layer2.py": "294475d986e95ad88a26862bbaeb065af14357125ea10e93a030a8a1dbe22327",
+    "prompts/changelog_significance.md": "89293743d769171f466f88c767067fd9a7b1a1cc73d7a212bb9dc8c57314f747",
+    "prompts/language_coherence.md": "9eec9d9e235536b3d7e45d3a960c374349eba536736706af4775586ce4b5ddf4",
+    "prompts/readme_quality.md": "d57e02bed171483618e9b366e2c61aba5bec870ca09710f8163a32a7dbd52221",
+    "prompts/setup_completeness.md": "5c78fb8ce1456b8948a0d0d8dffc5d1486dcda9cffc271a73aa599b9c8107930",
+    "registry.py": "c79e68f3b52f479bc460ca34510496c7cf0b42d36768e2f70023addfaf88bb3d",
+    "report.py": "8c0122e5f178601aa9cb3f964dbcec37d24826271c440c1010ea421a8f94b0a7",
+    "runner.py": "3f6931f82010edd9391189f402f6fcbdde1dfc53533a84c45aacd0f128a90f05",
+    "severity.py": "807173098432be187af1f51518c78cb0fe5091b1acab4ff6fc316b4629efce3f"
+  }
+}
