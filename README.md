@@ -1,6 +1,6 @@
 # skill-audit
 
-A Claude Code skill that audits other skills against the conventions of a
+An agent skill (Claude Code, Codex, agy, Cursor) that audits other skills against the conventions of a
 public-release repository -- file presence, format validity, code style,
 hardcoded paths -- and complements those deterministic checks with five
 LLM-driven judgement passes (README quality, SETUP completeness, CHANGELOG
@@ -21,7 +21,7 @@ Two-layer audit:
   the vendored `scripts/auditlib/` engine shared with
   [`claude-skill-repo-audit`](https://github.com/lucas-lima-s/claude-skill-repo-audit);
   this repo contributes three skill-specific checks plus two profiles.
-- **Layer 2** is delegated to the agent invoking the skill (Claude). The
+- **Layer 2** is delegated to the agent invoking the skill. The
   agent reads the JSON, applies five curated prompts to the relevant
   files, appends judgement findings, and renders the final markdown.
 
@@ -33,30 +33,36 @@ plus a list of findings, each tagged `OK`, `INFO`, `WARN`, or `FAIL`. Layer
 ## Installation
 
 ```bash
-git clone https://github.com/lucas-lima-s/claude-skill-audit.git ~/.claude/skills/skill-audit
+git clone https://github.com/lucas-lima-s/claude-skill-audit.git <skill-dir>
 ```
 
-The skill is portable: paths are resolved via `$SKILLS_PYTHON`,
-`$SKILL_AUDIT_HOME`, and `$TEMP` / `$env:TEMP`. No paths are hardcoded. See
+Expose `<skill-dir>` to each agent through its skills directory (for
+example `~/.claude/skills/audit`, `~/.agents/skills/audit`, or
+`~/.gemini/config/skills/audit`) as a symlink or a copy. The folder name is
+the command name, so it should match `name: audit` in `SKILL.md`.
+
+The skill is portable: scripts are found relative to the skill directory,
+the interpreter comes from `$SKILLS_PYTHON`, and reports go to `$TEMP` /
+`$env:TEMP`. No paths are hardcoded. See
 [`SETUP.md`](SETUP.md) for env-var details and [`CONTRIBUTING.md`](CONTRIBUTING.md)
 for development setup.
 
 ### Prerequisites
 
 - Python 3.11+ exposed via `$SKILLS_PYTHON` or on `PATH`.
-- Claude Code (the skill is designed to be invoked by Claude, but
-  `scripts/check.py` and `scripts/report.py` run standalone).
+- An agent that loads skills (Claude Code, Codex, agy or Cursor); the
+  scripts `check.py` and `report.py` also run standalone.
 
 ## Usage
 
-Once installed, Claude recognises natural-language phrases such as "audit
+Once installed, the agent recognises `/audit` and natural-language phrases such as "audit
 this skill", "is this skill ready to publish", or the pt-BR "audita essa
 skill" / "checa a skill X".
 
 ### Standalone invocation
 
 ```bash
-"$SKILLS_PYTHON" scripts/check.py ~/.claude/skills/foo --profile skill-public
+"$SKILLS_PYTHON" scripts/check.py <skill-path> --profile skill-public
 # The last line of stdout is `JSON_PATH=<abs-path>`.
 
 "$SKILLS_PYTHON" scripts/report.py --json <abs-path>
@@ -73,7 +79,10 @@ Full envelope in [`docs/json_contract.md`](docs/json_contract.md).
 |---|---|---|
 | `artifacts.*` | FAIL (SKILL.md) / WARN / INFO | presence of the 14 canonical files |
 | `skill_md.frontmatter` | FAIL | missing or empty `description:` |
-| `skill_md.description_length` | INFO | description under 40 or over 1024 chars |
+| `skill_md.description_length` | INFO / WARN | description under 40 chars (INFO) or over 300 (WARN) |
+| `skill_md.size` | WARN | SKILL.md over 500 lines |
+| `skill_md.name_matches_dir` | WARN | `name:` differs from the skill directory (ignoring a `claude-skill-` / `skill-` prefix) |
+| `skill_md.claude_only_tools` | INFO | Claude Code-only tools or slash commands with no note for other agents |
 | `skill_md.allowed_tools` | INFO | Python scripts without `allowed-tools:` |
 | `skill_layout.root_python` | WARN | `*.py` at the skill root instead of `scripts/` |
 | `skill_layout.tmp_tracked` | INFO | `scripts/_tmp/` or `data/_tmp/` tracked in git |
@@ -106,7 +115,7 @@ skill-public` (or the legacy `--profile public` alias), or pin one in a
 ## Bootstrapping a new skill
 
 ```bash
-uv run python scripts/init_skill.py --out ~/.claude/skills/my-new-skill \
+uv run python scripts/init_skill.py --out <skills-dir>/my-new-skill \
   --name my-new-skill --description "What my-new-skill does."
 ```
 
@@ -117,8 +126,8 @@ the name into `SKILL.md`, `README.md`, `SETUP.md`, `CHANGELOG.md`, and
 ## Mechanical fixes
 
 ```bash
-uv run python scripts/fix.py ~/.claude/skills/my-skill          # dry run: prints a diff
-uv run python scripts/fix.py ~/.claude/skills/my-skill --apply  # writes it
+uv run python scripts/fix.py <skill-path>          # dry run: prints a diff
+uv run python scripts/fix.py <skill-path> --apply  # writes it
 ```
 
 Limited to corrections with exactly one correct answer: the

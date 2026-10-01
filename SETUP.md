@@ -1,6 +1,6 @@
 # Setup -- `skill-audit`
 
-Two-layer audit for Claude Code skills. Layer 1 runs `scripts/check.py` in
+Two-layer audit for agent skills (Claude Code, Codex, agy, Cursor). Layer 1 runs `scripts/check.py` in
 Python; Layer 2 is delegated to the agent invoking the skill.
 
 Supported on Windows, Linux, and macOS via Python 3.11+.
@@ -13,7 +13,8 @@ Supported on Windows, Linux, and macOS via Python 3.11+.
   since 3.10).
 - Optional: [`uv`](https://docs.astral.sh/uv/) for dependency management
   and running the dev tooling (`uv sync`, `uv run pytest`).
-- Claude Code, when running through the `SKILL.md` flow.
+- Any agent that loads `SKILL.md` (Claude Code, Codex, agy, Cursor), when
+  running through the `SKILL.md` flow.
 
 No third-party runtime dependencies. Dev dependencies (`ruff`, `pytest`)
 live under `[dependency-groups].dev` in `pyproject.toml` and are installed
@@ -24,12 +25,12 @@ only when you work on the skill itself, not when you use it.
 | Variable | Purpose |
 |---|---|
 | `SKILLS_PYTHON` | Preferred Python interpreter the skill invokes for `scripts/check.py`. |
-| `SKILL_AUDIT_HOME` | The directory this skill was cloned into. Used in `SKILL.md`'s invocation snippets so no user-specific path shape is hardcoded. |
 | `TEMP` / `env:TEMP` | Where the JSON report is written by `scripts/check.py` when `--json-out` is not passed. |
 | `SKILL_AUDIT_NEVER_EXIT_NONZERO` | Test hook; when set to `1`, `check.py` always returns exit code 0. |
 
-The skill itself does not write any environment variable. It only reads
-the host environment to discover paths.
+The skill itself does not write any environment variable. Scripts are
+located relative to the skill directory (`<skill-dir>`, the folder that
+contains `SKILL.md`), so no variable is needed for that.
 
 ## Configuration
 
@@ -60,10 +61,10 @@ for `skill-public` and `skill-local` for backward compatibility.
 ## Running standalone
 
 ```bash
-"$SKILLS_PYTHON" scripts/check.py ~/.claude/skills/foo --profile skill-public
+"$SKILLS_PYTHON" "<skill-dir>/scripts/check.py" <skill-path> --profile skill-public
 
 # stdout's last line is `JSON_PATH=<abs-path>`.
-"$SKILLS_PYTHON" scripts/report.py --json <abs-path>
+"$SKILLS_PYTHON" "<skill-dir>/scripts/report.py" --json <abs-path>
 ```
 
 `check.py` writes the JSON report to a temp file by default; override the
@@ -77,7 +78,7 @@ shape.
 ## Layout
 
 ```
-~/.claude/skills/skill-audit/
+<skill-dir>/
   SKILL.md                  - skill entry point
   SETUP.md                  - this file
   README.md                 - public-facing summary

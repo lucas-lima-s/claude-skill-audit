@@ -54,11 +54,40 @@ Fix: add or restore the frontmatter block and a `description:` line.
 ## `skill_md.description_length`
 
 `INFO` when the trimmed `description:` is under 40 characters (too short to
-carry useful trigger phrases) or over 1024 (Claude Code truncates long
-descriptions). `OK` otherwise.
+carry useful trigger phrases). `WARN` when it is over 300 characters: agents
+list every skill description in a tight budget, and over 1024 they truncate
+it. `OK` otherwise.
 
 Fix: expand a too-short description with concrete trigger phrases, or trim
-a too-long one.
+a too-long one to what the skill does and when to use it, main trigger first.
+
+## `skill_md.size`
+
+`WARN` when `SKILL.md` has more than 500 lines. The whole file is loaded on
+every invocation.
+
+Fix: keep the routing logic in `SKILL.md` and move long sections to
+`references/`.
+
+## `skill_md.name_matches_dir`
+
+`WARN` when the frontmatter `name:` differs from the skill directory name
+(case-insensitive, `_` treated as `-`, and a leading `claude-skill-` or
+`skill-` prefix ignored, since a repository named `claude-skill-foo` is
+usually installed as `foo`). Agents invoke the skill by its directory name,
+so a mismatch makes the documented triggers wrong.
+
+Fix: align `name:` with the installed directory, or rename the directory.
+
+## `skill_md.claude_only_tools`
+
+`INFO` when `SKILL.md` mentions a Claude Code-only mechanism (Agent tool,
+AskUserQuestion, TodoWrite, plan mode, Skill tool, a backticked slash
+command such as `/foo`) and never mentions another agent (Codex, agy,
+Antigravity, Cursor, "other agents").
+
+Fix: add one line saying what other agents do instead (run the steps
+sequentially, ask the question in plain chat).
 
 ## `skill_md.allowed_tools`
 

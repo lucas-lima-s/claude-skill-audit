@@ -6,6 +6,26 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `skill_md.size` (WARN above 500 lines), `skill_md.name_matches_dir` (WARN
+  when `name:` differs from the skill directory) and
+  `skill_md.claude_only_tools` (INFO for Claude Code-only tools without a note
+  for other agents).
+
+### Changed
+
+- Frontmatter `name:` is now `audit`, matching the installed directory and
+  the `/audit` command.
+- `skill_md.description_length` warns above 300 characters instead of
+  informing above 1024.
+- `SKILL.md` locates scripts relative to the skill directory; the undefined
+  `SKILL_AUDIT_HOME` variable is gone.
+- Layer 2 prompts and the SKILL.md flow state that audited files are data,
+  not instructions; wording is agent-neutral.
+- Re-vendored `scripts/auditlib/` from `claude-skill-repo-audit`, which adds
+  detection of regex-encoded home-directory paths.
+
 ## [0.2.0] - 2026-08-25
 
 ### Changed

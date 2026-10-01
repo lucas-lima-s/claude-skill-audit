@@ -1,11 +1,27 @@
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 from auditlib.context import CheckContext
 from auditlib.registry import register
 from auditlib.severity import CheckResult, Severity
 
 MIN_DESCRIPTION_LENGTH = 40
+LISTING_DESCRIPTION_LENGTH = 300
 MAX_DESCRIPTION_LENGTH = 1024
+MAX_SKILL_MD_LINES = 500
+INSTALL_PREFIXES = ("claude-skill-", "skill-")
+CLAUDE_ONLY_PATTERNS = (
+    re.compile(r"\bAgent tool\b"),
+    re.compile(r"\bAskUserQuestion\b"),
+    re.compile(r"\bTodoWrite\b"),
+    re.compile(r"\b(?:EnterPlanMode|ExitPlanMode)\b"),
+    re.compile(r"\bplan mode\b", re.IGNORECASE),
+    re.compile(r"\bSkill tool\b"),
+    re.compile(r"`/[a-z][a-z0-9-]*(?::[a-z0-9-]+)?`"),
+)
+OTHER_AGENT_MARKERS = re.compile(r"\b(?:Codex|agy|Antigravity|Cursor|other agents?)\b", re.IGNORECASE)
 
 
 def _extract_frontmatter(content: str) -> str | None:
@@ -114,7 +130,19 @@ def run(ctx: CheckContext) -> list[CheckResult]:
     ]
 
     length = len(description.strip())
-    if length < MIN_DESCRIPTION_LENGTH:
+    if length > LISTING_DESCRIPTION_LENGTH:
+        truncated = length > MAX_DESCRIPTION_LENGTH
+        detail = "agents truncate long descriptions" if truncated else "it crowds the skill listing"
+        results.append(
+            CheckResult(
+                check="skill_md.description_length",
+                severity=Severity.WARN,
+                message=f"description is {length} characters (target {LISTING_DESCRIPTION_LENGTH}); {detail}",
+                file="SKILL.md",
+                remediation="keep what the skill does and when, main trigger first; drop implementation detail",
+            )
+        )
+    elif length < MIN_DESCRIPTION_LENGTH:
         results.append(
             CheckResult(
                 check="skill_md.description_length",
@@ -122,16 +150,6 @@ def run(ctx: CheckContext) -> list[CheckResult]:
                 message=f"description is only {length} character(s); Claude Code may struggle to trigger on it",
                 file="SKILL.md",
                 remediation="expand the description with concrete trigger phrases",
-            )
-        )
-    elif length > MAX_DESCRIPTION_LENGTH:
-        results.append(
-            CheckResult(
-                check="skill_md.description_length",
-                severity=Severity.INFO,
-                message=f"description is {length} characters; Claude Code truncates long descriptions",
-                file="SKILL.md",
-                remediation="trim the description below 1024 characters",
             )
         )
     else:
@@ -155,7 +173,66 @@ def run(ctx: CheckContext) -> list[CheckResult]:
             )
         )
 
+    results.extend(_size_result(content))
+    results.extend(_name_result(ctx, frontmatter))
+    results.extend(_portability_result(content))
     return results
+
+
+def _size_result(content: str) -> list[CheckResult]:
+    lines = len(content.splitlines())
+    if lines <= MAX_SKILL_MD_LINES:
+        return []
+    return [
+        CheckResult(
+            check="skill_md.size",
+            severity=Severity.WARN,
+            message=f"SKILL.md has {lines} lines (target {MAX_SKILL_MD_LINES}); it is loaded on every invocation",
+            file="SKILL.md",
+            remediation="keep the routing logic in SKILL.md and move long sections to references/",
+        )
+    ]
+
+
+def _normalized(value: str) -> str:
+    return value.strip().lower().replace("_", "-")
+
+
+def _name_result(ctx: CheckContext, frontmatter: str) -> list[CheckResult]:
+    name = _scalar_field(frontmatter, "name")
+    if not name:
+        return []
+    directory = _normalized(Path(ctx.repo_path).resolve().name)
+    candidates = {directory}
+    for prefix in INSTALL_PREFIXES:
+        if directory.startswith(prefix):
+            candidates.add(directory.removeprefix(prefix))
+    if _normalized(name) in candidates:
+        return []
+    return [
+        CheckResult(
+            check="skill_md.name_matches_dir",
+            severity=Severity.WARN,
+            message=f"frontmatter `name: {name}` does not match the skill directory `{Path(ctx.repo_path).name}`",
+            file="SKILL.md",
+            remediation="align `name:` with the directory the skill is installed under, so triggers match the command",
+        )
+    ]
+
+
+def _portability_result(content: str) -> list[CheckResult]:
+    hits = sorted({m.group(0) for pattern in CLAUDE_ONLY_PATTERNS for m in pattern.finditer(content)})
+    if not hits or OTHER_AGENT_MARKERS.search(content):
+        return []
+    return [
+        CheckResult(
+            check="skill_md.claude_only_tools",
+            severity=Severity.INFO,
+            message="SKILL.md relies on Claude Code-only tools with no note for other agents: " + ", ".join(hits),
+            file="SKILL.md",
+            remediation="say what Codex, agy or Cursor do instead (sequential steps, a plain question in chat)",
+        )
+    ]
 
 
 __all__ = ["run"]

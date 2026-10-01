@@ -42,8 +42,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: unsupported schema_version in {path} (expected 2)", file=sys.stderr)
         return 2
 
-    # The vendored renderer's header line is generic ("repo-audit: <target> ...");
-    # rebrand it for this tool without touching scripts/auditlib/.
     rendered = render_markdown(report)
     rendered = rendered.replace("repo-audit: ", "skill-audit: ", 1)
     print(rendered)

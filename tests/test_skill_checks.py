@@ -49,13 +49,75 @@ def test_description_length_ok_when_in_range(base_skill: Path) -> None:
     assert _finding(report, "skill_md.description_length")["severity"] == "OK"
 
 
-def test_description_length_info_when_too_long(tmp_path: Path) -> None:
+def test_description_length_warns_when_too_long(tmp_path: Path) -> None:
     root = tmp_path / "long-desc"
     root.mkdir()
     long_description = "x" * 1200
     (root / "SKILL.md").write_text(f"---\nname: x\ndescription: {long_description}\n---\n", encoding="utf-8")
     report = run_check(root)
-    assert _finding(report, "skill_md.description_length")["severity"] == "INFO"
+    assert _finding(report, "skill_md.description_length")["severity"] == "WARN"
+
+
+def test_description_length_warns_above_listing_budget(tmp_path: Path) -> None:
+    root = tmp_path / "listing-desc"
+    root.mkdir()
+    (root / "SKILL.md").write_text(f"---\nname: x\ndescription: {'y' * 301}\n---\n", encoding="utf-8")
+    finding = _finding(run_check(root), "skill_md.description_length")
+    assert finding["severity"] == "WARN"
+    assert "301" in finding["message"]
+
+
+def test_description_length_ok_at_listing_budget(tmp_path: Path) -> None:
+    root = tmp_path / "budget-desc"
+    root.mkdir()
+    (root / "SKILL.md").write_text(f"---\nname: x\ndescription: {'y' * 300}\n---\n", encoding="utf-8")
+    assert _finding(run_check(root), "skill_md.description_length")["severity"] == "OK"
+
+
+def _skill(tmp_path: Path, dirname: str, name: str, body: str = "") -> Path:
+    root = tmp_path / dirname
+    root.mkdir()
+    (root / "SKILL.md").write_text(
+        f"---\nname: {name}\ndescription: A skill used to exercise the SKILL.md checks.\n---\n\n{body}",
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_skill_md_size_warns_above_500_lines(tmp_path: Path) -> None:
+    root = _skill(tmp_path, "big", "big", "line\n" * 520)
+    assert _finding(run_check(root), "skill_md.size")["severity"] == "WARN"
+
+
+def test_skill_md_size_silent_on_base_skill(base_skill: Path) -> None:
+    assert not _findings(run_check(base_skill), "skill_md.size")
+
+
+def test_name_mismatch_with_directory_warns(tmp_path: Path) -> None:
+    root = _skill(tmp_path, "audit", "skill-audit")
+    assert _finding(run_check(root), "skill_md.name_matches_dir")["severity"] == "WARN"
+
+
+def test_name_matches_directory_after_install_prefix(tmp_path: Path) -> None:
+    root = _skill(tmp_path, "claude-skill-audit", "audit")
+    assert not _findings(run_check(root), "skill_md.name_matches_dir")
+
+
+def test_name_matches_base_skill_with_underscore_directory(base_skill: Path) -> None:
+    assert not _findings(run_check(base_skill), "skill_md.name_matches_dir")
+
+
+def test_claude_only_tools_without_alternative_is_info(tmp_path: Path) -> None:
+    root = _skill(tmp_path, "porty", "porty", "Use AskUserQuestion, then run `/porty`.\n")
+    finding = _finding(run_check(root), "skill_md.claude_only_tools")
+    assert finding["severity"] == "INFO"
+    assert "AskUserQuestion" in finding["message"]
+
+
+def test_claude_only_tools_with_alternative_is_silent(tmp_path: Path) -> None:
+    body = "Use AskUserQuestion; in Codex, agy or Cursor ask the question in chat.\n"
+    root = _skill(tmp_path, "porty", "porty", body)
+    assert not _findings(run_check(root), "skill_md.claude_only_tools")
 
 
 # --- skill_layout.* ---

@@ -193,3 +193,14 @@ def test_hardcoded_paths_detects_windows_literal(malformed_skill: Path) -> None:
 def test_hardcoded_paths_clean_on_base_skill(base_skill: Path) -> None:
     report = run_check(base_skill)
     assert not _findings(report, "hardcoded_paths.literal")
+
+
+def test_hardcoded_paths_detects_regex_encoded_home(tmp_path: Path) -> None:
+    root = tmp_path / "regex-home"
+    (root / "scripts").mkdir(parents=True)
+    (root / "SKILL.md").write_text("---\nname: regex-home\ndescription: A skill for testing.\n---\n", encoding="utf-8")
+    slash_class = "[" + ("\\" * 2) + "/]+"
+    payload = 'PATTERN = r"C:' + slash_class + "Users" + slash_class + 'someone"\n'
+    (root / "scripts" / "hygiene.py").write_text(payload, encoding="utf-8")
+    hits = _findings(run_check(root), "hardcoded_paths.literal")
+    assert hits and all(f["severity"] == "FAIL" for f in hits)
